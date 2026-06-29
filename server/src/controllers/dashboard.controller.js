@@ -25,9 +25,9 @@ export const getDashboardStats = async (req, res, next) => {
     const monthlyRevenue = salesMonthObj.length > 0 ? salesMonthObj[0].total : 0;
 
     // 3. Low Stock Alerts (stock <= 10)
-    const lowStockCount = await Medicine.countDocuments({ stock: { $lte: 10 } });
-    const lowStockList = await Medicine.find({ stock: { $lte: 10 } })
-      .select('name company batchNo stock price')
+    const lowStockCount = await Medicine.countDocuments({ qty: { $lte: 10 } });
+    const lowStockList = await Medicine.find({ qty: { $lte: 10 } })
+      .select('description batch qty mrp')
       .limit(5);
 
     // 4. Expiry Alerts (< 30 days)
@@ -42,7 +42,7 @@ export const getDashboardStats = async (req, res, next) => {
     const expiringSoonList = await Medicine.find({
       expiryDate: { $gte: now, $lte: thirtyDaysFromNow }
     })
-      .select('name company batchNo expiryDate stock')
+      .select('description batch expiryDate qty')
       .sort({ expiryDate: 1 })
       .limit(5);
 
@@ -116,9 +116,8 @@ export const getDashboardStats = async (req, res, next) => {
           _id: 1,
           quantitySold: 1,
           revenue: { $round: ['$revenue', 2] },
-          name: '$medicine.name',
-          company: '$medicine.company',
-          batchNo: '$medicine.batchNo'
+          name: '$medicine.description',
+          batch: '$medicine.batch'
         }
       }
     ]);

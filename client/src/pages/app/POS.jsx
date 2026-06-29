@@ -12,7 +12,8 @@ import {
   Minus, 
   CheckCircle2, 
   AlertCircle,
-  AlertTriangle 
+  AlertTriangle,
+  Percent
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -53,32 +54,33 @@ const POS = () => {
     // 1. Expiry Check
     const isExpired = new Date(med.expiryDate) <= new Date();
     if (isExpired) {
-      toast.error(`Cannot sell "${med.name}" - it has expired!`);
+      toast.error(`Cannot sell "${med.description}" - it has expired!`);
       return;
     }
 
     // 2. Stock Check
-    if (med.stock <= 0) {
-      toast.error(`"${med.name}" is currently out of stock.`);
+    if ((med.qty ?? 0) <= 0) {
+      toast.error(`"${med.description}" is currently out of stock.`);
       return;
     }
 
     const existingIndex = cart.findIndex(item => item._id === med._id);
     if (existingIndex > -1) {
       const existingItem = cart[existingIndex];
-      if (existingItem.quantity >= med.stock) {
-        toast.error(`Only ${med.stock} units of "${med.name}" available in inventory.`);
+      if (existingItem.quantity >= med.qty) {
+        toast.error(`Only ${med.qty} units of "${med.description}" available in inventory.`);
         return;
       }
       const updated = [...cart];
       updated[existingIndex].quantity += 1;
       setCart(updated);
     } else {
-      setCart([...cart, { ...med, quantity: 1 }]);
+      // Use mrp as selling price, copy discount from inventory
+      setCart([...cart, { ...med, quantity: 1, price: med.mrp, discount: med.discount ?? 0 }]);
     }
     setSearch('');
     setSearchResults([]);
-    toast.success(`${med.name} added to cart.`);
+    toast.success(`${med.description} added to cart.`);
   };
 
   const updateQuantity = (medId, delta, stockLimit) => {
@@ -95,6 +97,11 @@ const POS = () => {
       return item;
     }).filter(Boolean);
     setCart(updated);
+  };
+
+  const updateDiscount = (medId, value) => {
+    const disc = Math.min(100, Math.max(0, Number(value) || 0));
+    setCart(cart.map(item => item._id === medId ? { ...item, discount: disc } : item));
   };
 
   const removeFromCart = (medId) => {
@@ -214,7 +221,7 @@ const POS = () => {
               <div className="p-4 text-center text-xs text-text-secondary dark:text-slate-400 animate-pulse">Searching inventory records...</div>
             ) : searchResults.length > 0 ? (
               searchResults.map(med => {
-                const isLow = med.stock <= 10;
+                const isLow = (med.qty ?? 0) <= 10;
                 const isExpired = new Date(med.expiryDate) <= new Date();
 
                 return (
@@ -226,21 +233,21 @@ const POS = () => {
                     }`}
                   >
                     <div>
-                      <h4 className="font-bold text-text-primary dark:text-white capitalize">{med.name}</h4>
+                      <h4 className="font-bold text-text-primary dark:text-white capitalize">{med.description}</h4>
                       <p className="text-[10px] text-text-secondary dark:text-slate-400">
-                        {med.company} | Batch: {med.batchNo} | Exp: {new Date(med.expiryDate).toLocaleDateString()}
+                        {med.pack} | Batch: {med.batch} | Exp: {new Date(med.expiryDate).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right flex items-center gap-4">
                       <div>
-                        <span className="text-xs font-bold text-text-primary dark:text-white block">Rs. {med.price.toFixed(2)}</span>
+                        <span className="text-xs font-bold text-text-primary dark:text-white block">Rs. {(med.mrp ?? 0).toFixed(2)}</span>
                         {med.discount > 0 && <span className="text-[10px] text-emerald-500 font-bold">-{med.discount}% Disc</span>}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                           isExpired ? 'bg-red-500/10 text-red-500' : isLow ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary dark:text-sky-400'
                         }`}>
-                          {isExpired ? 'Expired' : `${med.stock} left`}
+                          {isExpired ? 'Expired' : `${med.qty} left`}
                         </span>
                       </div>
                     </div>
@@ -277,34 +284,40 @@ const POS = () => {
                 const total = subtotal * (1 - (item.discount || 0) / 100);
 
                 return (
-                  <div key={item._id} className="flex justify-between items-center text-xs border-b border-slate-100 dark:border-slate-800/40 pb-2">
-                    <div className="space-y-0.5 max-w-[140px]">
-                      <h4 className="font-bold text-text-primary dark:text-white truncate capitalize">{item.name}</h4>
-                      <p className="text-[10px] text-text-secondary dark:text-slate-400">Rs. {item.price.toFixed(2)} {item.discount > 0 && `(Disc ${item.discount}%)`}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-7">
-                        <button 
-                          onClick={() => updateQuantity(item._id, -1, item.stock)}
-                          className="px-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-text-secondary h-full"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="px-2 font-bold text-text-primary dark:text-white text-xs">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateQuantity(item._id, 1, item.stock)}
-                          className="px-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-text-secondary h-full"
-                        >
-                          <Plus className="h-3 w-3" />
+                  <div key={item._id} className="border-b border-slate-100 dark:border-slate-800/40 pb-3 space-y-2">
+                    <div className="flex justify-between items-start text-xs">
+                      <div className="space-y-0.5 max-w-[130px]">
+                        <h4 className="font-bold text-text-primary dark:text-white truncate capitalize">{item.description}</h4>
+                        <p className="text-[10px] text-text-secondary dark:text-slate-400">Rs. {item.price.toFixed(2)} × {item.quantity}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-7">
+                          <button onClick={() => updateQuantity(item._id, -1, item.qty)} className="px-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-text-secondary h-full">
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="px-2 font-bold text-text-primary dark:text-white text-xs">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item._id, 1, item.qty)} className="px-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-text-secondary h-full">
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <button onClick={() => removeFromCart(item._id)} className="text-danger hover:bg-red-50 dark:hover:bg-red-950/20 p-1.5 rounded-lg">
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                      <span className="font-bold text-text-primary dark:text-white min-w-[50px] text-right">Rs.{total.toFixed(1)}</span>
-                      <button 
-                        onClick={() => removeFromCart(item._id)}
-                        className="text-danger hover:bg-red-50 dark:hover:bg-red-950/20 p-1.5 rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    </div>
+                    {/* Discount editor */}
+                    <div className="flex items-center gap-2">
+                      <Percent className="h-3 w-3 text-text-secondary dark:text-slate-500" />
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={item.discount}
+                        onChange={(e) => updateDiscount(item._id, e.target.value)}
+                        className="w-16 h-6 px-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-emerald-500 font-bold focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                      <span className="text-[10px] text-text-secondary dark:text-slate-400">% disc</span>
+                      <span className="ml-auto font-bold text-text-primary dark:text-white text-xs">Rs.{total.toFixed(1)}</span>
                     </div>
                   </div>
                 );

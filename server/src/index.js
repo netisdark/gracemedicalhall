@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.js';
 import medicineRoutes from './routes/medicines.js';
 import saleRoutes from './routes/sales.js';
 import dashboardRoutes from './routes/dashboard.js';
+import auditRoutes from './routes/audit.js';
 
 // Connect to MongoDB
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Catch-all
 app.all('*', (req, res, next) => {

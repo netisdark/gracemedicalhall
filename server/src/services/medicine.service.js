@@ -9,7 +9,7 @@ class MedicineService {
 
     // Filter rules
     if (filter === 'lowStock') {
-      query.stock = { $lte: 10 };
+      query.qty = { $lte: 10 };
     } else if (filter === 'expiringSoon') {
       const now = new Date();
       const thirtyDaysFromNow = new Date();
@@ -29,31 +29,29 @@ class MedicineService {
         .limit(Number(limit))
         .skip(Number(skip));
 
-      // Regex fallback for partial matching on name/company if text search returned nothing
+      // Regex fallback for partial matching on description/pack
       if (medicines.length === 0) {
         delete query.$text;
         query.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { company: { $regex: search, $options: 'i' } }
+          { description: { $regex: search, $options: 'i' } },
+          { pack: { $regex: search, $options: 'i' } },
+          { sn: { $regex: search, $options: 'i' } }
         ];
         medicines = await Medicine.find(query)
-          .sort({ name: 1 })
+          .sort({ description: 1 })
           .limit(Number(limit))
           .skip(Number(skip));
       }
     } else {
       medicines = await Medicine.find(query)
-        .sort({ name: 1 })
+        .sort({ description: 1 })
         .limit(Number(limit))
         .skip(Number(skip));
     }
 
     const total = await Medicine.countDocuments(query);
 
-    return {
-      medicines,
-      total
-    };
+    return { medicines, total };
   }
 
   async getMedicineById(id) {
@@ -65,27 +63,27 @@ class MedicineService {
   }
 
   async createMedicine(data, userId) {
-    const existing = await Medicine.findOne({ name: data.name, batchNo: data.batchNo });
+    const existing = await Medicine.findOne({ sn: data.sn, batch: data.batch });
     if (existing) {
-      throw new AppError(`Medicine "${data.name}" with Batch No "${data.batchNo}" already exists.`, 400);
+      throw new AppError(`Medicine SN "${data.sn}" with Batch "${data.batch}" already exists.`, 400);
     }
 
     const medicine = new Medicine(data);
     await medicine.save();
 
-    await auditService.log(userId, 'create', 'Medicine', medicine._id, `Added: ${medicine.name} (Batch: ${medicine.batchNo})`);
+    await auditService.log(userId, 'create', 'Medicine', medicine._id, `Added: ${medicine.description} (Batch: ${medicine.batch})`);
     return medicine;
   }
 
   async updateMedicine(id, data, userId) {
-    if (data.name || data.batchNo) {
+    if (data.sn || data.batch) {
       const medicine = await this.getMedicineById(id);
-      const name = data.name || medicine.name;
-      const batchNo = data.batchNo || medicine.batchNo;
+      const sn = data.sn || medicine.sn;
+      const batch = data.batch || medicine.batch;
 
-      const existing = await Medicine.findOne({ name, batchNo, _id: { $ne: id } });
+      const existing = await Medicine.findOne({ sn, batch, _id: { $ne: id } });
       if (existing) {
-        throw new AppError(`Another medicine "${name}" with Batch No "${batchNo}" already exists.`, 400);
+        throw new AppError(`Another medicine with SN "${sn}" and Batch "${batch}" already exists.`, 400);
       }
     }
 
@@ -94,7 +92,7 @@ class MedicineService {
       throw new AppError('Medicine not found', 404);
     }
 
-    await auditService.log(userId, 'update', 'Medicine', updated._id, `Updated: ${updated.name}`);
+    await auditService.log(userId, 'update', 'Medicine', updated._id, `Updated: ${updated.description}`);
     return updated;
   }
 
@@ -104,10 +102,11 @@ class MedicineService {
       throw new AppError('Medicine not found', 404);
     }
 
-    await auditService.log(userId, 'delete', 'Medicine', id, `Deleted: ${medicine.name} (Batch: ${medicine.batchNo})`);
+    await auditService.log(userId, 'delete', 'Medicine', id, `Deleted: ${medicine.description} (Batch: ${medicine.batch})`);
     return medicine;
   }
 }
 
 export const medicineService = new MedicineService();
 export default medicineService;
+

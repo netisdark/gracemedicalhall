@@ -15,14 +15,18 @@ export const SignupSchema = z.object({
 });
 
 export const MedicineBaseSchema = z.object({
-  name: z.string().min(2, 'Medicine name must be at least 2 characters').trim(),
-  company: z.string().min(2, 'Company name must be at least 2 characters').trim(),
-  batchNo: z.string().min(1, 'Batch number is required').trim(),
+  sn: z.string().min(1, 'Serial number is required').trim(),
+  description: z.string().min(2, 'Item description must be at least 2 characters').trim(),
+  pack: z.string().min(1, 'Pack type is required').trim(),
+  batch: z.string().min(1, 'Batch number is required').trim(),
   productionDate: z.preprocess((val) => new Date(val), z.date({ invalid_type_error: 'Invalid production date' })),
   expiryDate: z.preprocess((val) => new Date(val), z.date({ invalid_type_error: 'Invalid expiry date' })),
-  stock: z.preprocess((val) => Number(val), z.number().int().nonnegative('Stock cannot be negative')),
-  price: z.preprocess((val) => Number(val), z.number().positive('Price must be greater than zero')),
-  discount: z.preprocess((val) => val === '' || val === undefined ? 0 : Number(val), z.number().nonnegative().max(100, 'Discount cannot exceed 100%').default(0))
+  qty: z.preprocess((val) => Number(val), z.number().int().nonnegative('Quantity cannot be negative')),
+  costRate: z.preprocess((val) => Number(val), z.number().nonnegative('Cost rate cannot be negative')),
+  amount: z.preprocess((val) => Number(val), z.number().nonnegative('Amount cannot be negative')),
+  mrp: z.preprocess((val) => Number(val), z.number().positive('MRP must be greater than zero')),
+  discount: z.preprocess((val) => val === '' || val === undefined ? 0 : Number(val), z.number().nonnegative().max(100, 'Discount cannot exceed 100%').default(0)),
+  remarks: z.string().optional()
 });
 
 export const MedicineSchema = MedicineBaseSchema.refine(data => data.expiryDate > data.productionDate, {

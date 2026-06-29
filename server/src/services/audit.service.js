@@ -23,7 +23,35 @@ class AuditService {
       .sort({ timestamp: -1 })
       .limit(limit);
   }
+
+  // Filtered query for audit logs page
+  async getLogs({ action, collectionName, dateFrom, dateTo, limit = 100, skip = 0 } = {}) {
+    const query = {};
+    if (action) query.action = action;
+    if (collectionName) query.collectionName = collectionName;
+    if (dateFrom || dateTo) {
+      query.timestamp = {};
+      if (dateFrom) query.timestamp.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        query.timestamp.$lte = end;
+      }
+    }
+
+    const [logs, total] = await Promise.all([
+      AuditLog.find(query)
+        .populate('user', 'username role')
+        .sort({ timestamp: -1 })
+        .limit(Number(limit))
+        .skip(Number(skip)),
+      AuditLog.countDocuments(query)
+    ]);
+
+    return { logs, total };
+  }
 }
 
 export const auditService = new AuditService();
 export default auditService;
+

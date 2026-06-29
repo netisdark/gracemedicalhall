@@ -15,6 +15,7 @@ import Dashboard from './pages/app/Dashboard.jsx';
 import Medicines from './pages/app/Medicines.jsx';
 import POS from './pages/app/POS.jsx';
 import AuditLogs from './pages/app/AuditLogs.jsx';
+import StaffManagement from './pages/app/StaffManagement.jsx';
 
 function App() {
   const { user, loading } = useAuth();
@@ -82,6 +83,7 @@ function App() {
         {activeTab === 'medicines' && <Medicines />}
         {activeTab === 'pos' && <POS />}
         {activeTab === 'audit' && <AuditLogs />}
+        {activeTab === 'staff' && <StaffManagement />}
       </Layout>
       <Toaster position="bottom-right" />
     </div>
