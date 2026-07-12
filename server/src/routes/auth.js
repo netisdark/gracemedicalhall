@@ -3,7 +3,7 @@ import { login, logout, verify, signup, updateProfile, getUsers, deleteUser } fr
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import { loginLimiter } from '../middleware/rateLimiter.js';
-import { LoginSchema, SignupSchema } from '../../../shared/validation.js';
+import { LoginSchema, SignupSchema } from '../../shared/validation.js';
 
 const router = express.Router();
 

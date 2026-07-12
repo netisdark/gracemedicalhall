@@ -2,7 +2,7 @@ import express from 'express';
 import { getMedicines, getMedicineById, createMedicine, updateMedicine, deleteMedicine } from '../controllers/medicine.controller.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
-import { MedicineSchema, MedicineUpdateSchema } from '../../../shared/validation.js';
+import { MedicineSchema, MedicineUpdateSchema } from '../../shared/validation.js';
 
 const router = express.Router();
 
