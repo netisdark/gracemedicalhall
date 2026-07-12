@@ -52,7 +52,8 @@ const POS = () => {
 
   const addToCart = (med) => {
     // 1. Expiry Check
-    const isExpired = new Date(med.expiryDate) <= new Date();
+    const expDate = new Date(med.expiryDate);
+    const isExpired = !isNaN(expDate.getTime()) && expDate <= new Date();
     if (isExpired) {
       toast.error(`Cannot sell "${med.description}" - it has expired!`);
       return;
@@ -222,7 +223,8 @@ const POS = () => {
             ) : searchResults.length > 0 ? (
               searchResults.map(med => {
                 const isLow = (med.qty ?? 0) <= 10;
-                const isExpired = new Date(med.expiryDate) <= new Date();
+                const expDate = new Date(med.expiryDate);
+                const isExpired = !isNaN(expDate.getTime()) && expDate <= new Date();
 
                 return (
                   <div 
@@ -235,7 +237,7 @@ const POS = () => {
                     <div>
                       <h4 className="font-bold text-text-primary dark:text-white capitalize">{med.description}</h4>
                       <p className="text-[10px] text-text-secondary dark:text-slate-400">
-                        {med.pack} | Batch: {med.batch} | Exp: {new Date(med.expiryDate).toLocaleDateString()}
+                        {med.pack} | Batch: {med.batch} | Exp: {med.expiryDate}
                       </p>
                     </div>
                     <div className="text-right flex items-center gap-4">

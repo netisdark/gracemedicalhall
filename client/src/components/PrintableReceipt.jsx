@@ -74,12 +74,12 @@ const PrintableReceipt = forwardRef(({ sale }, ref) => {
               <React.Fragment key={index}>
                 <tr className="align-top">
                   <td className="pt-1.5 font-bold" colSpan="4">
-                    {item.medicine?.name || 'Medicine Name'}
+                    {item.medicine?.description || 'Medicine Description'}
                   </td>
                 </tr>
                 <tr className="border-b border-dotted border-black/30 align-top">
                   <td className="pb-1 text-[9px] text-gray-700">
-                    Batch: {item.medicine?.batchNo || 'N/A'} {item.discountAtSale > 0 && `(Disc ${item.discountAtSale}%)`}
+                    Batch: {item.medicine?.batch || 'N/A'} {item.discountAtSale > 0 && `(Disc ${item.discountAtSale}%)`}
                   </td>
                   <td className="pb-1 text-center">{item.quantity}</td>
                   <td className="pb-1 text-right">Rs.{item.priceAtSale.toFixed(2)}</td>

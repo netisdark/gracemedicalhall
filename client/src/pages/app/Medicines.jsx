@@ -64,8 +64,8 @@ const Medicines = () => {
       description: med.description || '',
       pack: med.pack || '',
       batch: med.batch || '',
-      productionDate: med.productionDate ? new Date(med.productionDate).toISOString().split('T')[0] : '',
-      expiryDate: med.expiryDate ? new Date(med.expiryDate).toISOString().split('T')[0] : '',
+      productionDate: med.productionDate || '',
+      expiryDate: med.expiryDate || '',
       qty: med.qty ?? '',
       costRate: med.costRate ?? '',
       amount: med.amount ?? '',
@@ -197,7 +197,7 @@ const Medicines = () => {
                         <td className="p-3 text-xs font-mono">{med.batch}</td>
                         <td className="p-3 text-xs">
                           <span className={`inline-flex items-center gap-1 font-bold ${isExp ? 'text-danger' : isSoon ? 'text-amber-500' : 'text-text-secondary dark:text-slate-300'}`}>
-                            {new Date(med.expiryDate).toLocaleDateString()}
+                            {med.expiryDate}
                             {isExp && <AlertCircle className="h-3.5 w-3.5" />}
                             {isSoon && <AlertTriangle className="h-3.5 w-3.5 animate-pulse" />}
                           </span>
@@ -282,11 +282,11 @@ const Medicines = () => {
               {/* Row 3: Production + Expiry */}
               <div>
                 <label className="block text-xs font-semibold text-text-secondary dark:text-slate-400 mb-1">Production Date</label>
-                <input type="date" value={form.productionDate} onChange={(e) => setForm({...form, productionDate: e.target.value})} className={inputCls} required />
+                <input type="text" placeholder="e.g. 2026-01-10 or Jan 2026" value={form.productionDate} onChange={(e) => setForm({...form, productionDate: e.target.value})} className={inputCls} required />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-text-secondary dark:text-slate-400 mb-1">Expiry Date</label>
-                <input type="date" value={form.expiryDate} onChange={(e) => setForm({...form, expiryDate: e.target.value})} className={inputCls} required />
+                <input type="text" placeholder="e.g. 2028-01-10 or Jan 2028" value={form.expiryDate} onChange={(e) => setForm({...form, expiryDate: e.target.value})} className={inputCls} required />
               </div>
 
               {/* Row 4: QTY + MRP */}

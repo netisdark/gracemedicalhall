@@ -56,20 +56,24 @@ class SaleService {
         throw new AppError(`Medicine with ID ${item.medicineId} not found`, 404);
       }
 
-      if (medicine.expiryDate <= now) {
-        throw new AppError(`Cannot sell "${medicine.name}" (Batch: ${medicine.batchNo}) - it has expired.`, 400);
+      // Skip checking date if expiryDate is string-based, or handle accordingly
+      // Since expiryDate is now a String, we can optionally parse/compare it if it's a date string,
+      // but let's check if it's an invalid date or expired. Let's do a loose check:
+      const expDate = new Date(medicine.expiryDate);
+      if (!isNaN(expDate.getTime()) && expDate <= now) {
+        throw new AppError(`Cannot sell "${medicine.description}" (Batch: ${medicine.batch}) - it has expired.`, 400);
       }
 
-      if (medicine.stock < item.quantity) {
-        throw new AppError(`Insufficient stock for "${medicine.name}". Available: ${medicine.stock}, Requested: ${item.quantity}`, 400);
+      if (medicine.qty < item.quantity) {
+        throw new AppError(`Insufficient stock for "${medicine.description}". Available: ${medicine.qty}, Requested: ${item.quantity}`, 400);
       }
 
       // Deduct stock
-      medicine.stock -= item.quantity;
+      medicine.qty -= item.quantity;
       await medicine.save({ session });
 
-      const priceAtSale = medicine.price;
-      const discountAtSale = medicine.discount;
+      const priceAtSale = Number(item.price) || medicine.mrp;
+      const discountAtSale = Number(item.discount) !== undefined ? Number(item.discount) : (medicine.discount || 0);
       const subtotal = priceAtSale * item.quantity;
       const discounted = subtotal * (1 - discountAtSale / 100);
       totalPrice += discounted;
@@ -93,13 +97,13 @@ class SaleService {
     await auditService.log(userId, 'checkout', 'Sale', sale._id, `POS Checkout: Total NPR ${sale.totalPrice}`);
 
     return Sale.findById(sale._id)
-      .populate('items.medicine', 'name company batchNo expiryDate')
+      .populate('items.medicine', 'description pack batch expiryDate')
       .populate('soldBy', 'username');
   }
 
   async getSalesHistory(limit = 100, skip = 0) {
     return Sale.find()
-      .populate('items.medicine', 'name company batchNo')
+      .populate('items.medicine', 'description pack batch')
       .populate('soldBy', 'username')
       .sort({ createdAt: -1 })
       .limit(Number(limit))

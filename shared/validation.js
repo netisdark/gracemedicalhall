@@ -19,8 +19,8 @@ export const MedicineBaseSchema = z.object({
   description: z.string().min(2, 'Item description must be at least 2 characters').trim(),
   pack: z.string().min(1, 'Pack type is required').trim(),
   batch: z.string().min(1, 'Batch number is required').trim(),
-  productionDate: z.preprocess((val) => new Date(val), z.date({ invalid_type_error: 'Invalid production date' })),
-  expiryDate: z.preprocess((val) => new Date(val), z.date({ invalid_type_error: 'Invalid expiry date' })),
+  productionDate: z.string().min(1, 'Production date is required').trim(),
+  expiryDate: z.string().min(1, 'Expiry date is required').trim(),
   qty: z.preprocess((val) => Number(val), z.number().int().nonnegative('Quantity cannot be negative')),
   costRate: z.preprocess((val) => Number(val), z.number().nonnegative('Cost rate cannot be negative')),
   amount: z.preprocess((val) => Number(val), z.number().nonnegative('Amount cannot be negative')),
@@ -29,20 +29,9 @@ export const MedicineBaseSchema = z.object({
   remarks: z.string().optional()
 });
 
-export const MedicineSchema = MedicineBaseSchema.refine(data => data.expiryDate > data.productionDate, {
-  message: "Expiry date must be after production date",
-  path: ["expiryDate"]
-});
+export const MedicineSchema = MedicineBaseSchema;
 
-export const MedicineUpdateSchema = MedicineBaseSchema.partial().refine(data => {
-  if (data.expiryDate && data.productionDate) {
-    return data.expiryDate > data.productionDate;
-  }
-  return true;
-}, {
-  message: "Expiry date must be after production date",
-  path: ["expiryDate"]
-});
+export const MedicineUpdateSchema = MedicineBaseSchema.partial();
 
 export const SaleItemSchema = z.object({
   medicineId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid medicine ID'),
