@@ -5,12 +5,34 @@ import auditService from './audit.service.js';
 
 class AuthService {
   async login(username, password) {
+    console.log('[DEBUG LOGIN] Incoming request username/email:', username);
+    console.log('[DEBUG LOGIN] Incoming password length:', password ? password.length : 0);
+    console.log('[DEBUG LOGIN] Incoming password type:', typeof password);
+    console.log('[DEBUG LOGIN] Incoming password has whitespace/trim issues?:', password !== password.trim());
+
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) {
+      console.log('[DEBUG LOGIN] User search returned null for:', username);
       throw new AppError('Invalid username or password', 401);
     }
 
-    const isMatch = await user.comparePassword(password);
+    console.log('[DEBUG LOGIN] User found in DB. Full User Object (excluding password):', {
+      _id: user._id,
+      username: user.username,
+      role: user.role,
+      createdAt: user.createdAt
+    });
+    console.log('[DEBUG LOGIN] Stored password hash length:', user.password ? user.password.length : 0);
+    console.log('[DEBUG LOGIN] Stored password hash value:', user.password);
+
+    let isMatch = false;
+    try {
+      isMatch = await user.comparePassword(password);
+      console.log('[DEBUG LOGIN] bcrypt.compare() result:', isMatch);
+    } catch (bcryptErr) {
+      console.error('[DEBUG LOGIN] Error during bcrypt.compare():', bcryptErr);
+    }
+
     if (!isMatch) {
       throw new AppError('Invalid username or password', 401);
     }
