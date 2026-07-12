@@ -25,7 +25,7 @@ connectDB();
 app.use(helmet());
 
 // CORS config supporting credentials (necessary for httpOnly cookies and csrf validation)
-const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:5173'];
+const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:5173' || 'https://gracemedicalhall.netlify.app'];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
