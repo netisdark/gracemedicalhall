@@ -21,17 +21,28 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
+// Trust proxy — required on Render/Heroku for secure cookies to work behind a reverse proxy
+app.set('trust proxy', 1);
+
 // Security Headers
 app.use(helmet());
 
 // CORS config supporting credentials (necessary for httpOnly cookies and csrf validation)
-const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:5173' || 'https://gracemedicalhall.netlify.app'];
+// CLIENT_URL env var should be set to the deployed frontend origin on Render
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.CLIENT_URL,
+].filter(Boolean); // remove undefined/null entries
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.warn(`[CORS] Blocked request from unlisted origin: ${origin}`);
+    console.warn(`[CORS] Allowed origins:`, allowedOrigins);
     return callback(new Error('CORS Policy block: Origin not allowed'), false);
   },
   credentials: true,

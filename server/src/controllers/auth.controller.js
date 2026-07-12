@@ -11,10 +11,12 @@ export const login = async (req, res, next) => {
     const isProd = process.env.NODE_ENV === 'production';
 
     // HTTP-only token cookie for authentication
+    // sameSite: 'none' is required for cross-origin cookie sending (e.g. Netlify -> Render)
+    // secure: true is required when sameSite is 'none'
     res.cookie('token', result.token, {
       httpOnly: true,
-      secure: isProd,
-      sameSite: 'strict',
+      secure: isProd,           // must be true in prod for sameSite: none to work
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 8 * 60 * 60 * 1000 // 8 hours
     });
 
@@ -22,9 +24,11 @@ export const login = async (req, res, next) => {
     res.cookie('csrfToken', csrfToken, {
       httpOnly: false,
       secure: isProd,
-      sameSite: 'strict',
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 8 * 60 * 60 * 1000
     });
+
+    console.log(`[AUTH] Login successful for: ${result.user.username} | env: ${process.env.NODE_ENV} | sameSite: ${isProd ? 'none' : 'lax'}`);
 
     res.status(200).json({
       success: true,
@@ -57,8 +61,15 @@ export const signup = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    res.clearCookie('token');
-    res.clearCookie('csrfToken');
+    const isProd = process.env.NODE_ENV === 'production';
+    // Must pass the same options used when setting the cookie, otherwise browser ignores the clear
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax'
+    };
+    res.clearCookie('token', cookieOptions);
+    res.clearCookie('csrfToken', { ...cookieOptions, httpOnly: false });
     res.status(200).json({
       success: true,
       data: null,
